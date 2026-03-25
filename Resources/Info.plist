@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Notchy</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.notchy.app</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleExecutable</key>
+    <string>Notchy</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>14.0</string>
+    <key>LSUIElement</key>
+    <true/>
+    <key>NSCalendarsUsageDescription</key>
+    <string>Notchy needs access to your calendar to display today's events.</string>
+    <key>NSRemindersUsageDescription</key>
+    <string>Notchy needs access to your reminders to display and manage them.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Notchy needs to communicate with Music to show now playing info.</string>
+</dict>
+</plist>
