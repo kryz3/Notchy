@@ -1,10 +1,12 @@
 import AppKit
 
-struct SimpleReminder: Identifiable {
+struct SimpleReminder: Identifiable, Equatable {
     let id: String
     let title: String
     let listName: String
     let dueDate: String
+
+    static func == (lhs: SimpleReminder, rhs: SimpleReminder) -> Bool { lhs.id == rhs.id }
 }
 
 @Observable
@@ -18,7 +20,6 @@ final class RemindersManager {
     }
 
     func fetchReminders() {
-        // Use ASCII character 10 (linefeed) as separator — \n doesn't work in AppleScript strings
         let source = """
         tell application "Reminders"
             set lf to ASCII character 10
@@ -29,7 +30,10 @@ final class RemindersManager {
                 set rList to name of container of r
                 set rDue to ""
                 try
-                    set rDue to (due date of r) as text
+                    set d to due date of r
+                    if d is not missing value then
+                        set rDue to short date string of d
+                    end if
                 end try
                 set output to output & rId & "||" & rName & "||" & rList & "||" & rDue & lf
             end repeat
@@ -39,21 +43,17 @@ final class RemindersManager {
 
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var error: NSDictionary?
-            let script = NSAppleScript(source: source)
-            let result = script?.executeAndReturnError(&error)
+            let result = NSAppleScript(source: source)?.executeAndReturnError(&error)
 
             DispatchQueue.main.async {
                 if let err = error {
                     Log.info("[Reminders] Fetch error: \(err)")
-                    if let errNum = err["NSAppleScriptErrorNumber"] as? Int, errNum == -1743 {
-                        self?.accessDenied = true
-                    }
+                    if let n = err["NSAppleScriptErrorNumber"] as? Int, n == -1743 { self?.accessDenied = true }
                     return
                 }
 
                 guard let str = result?.stringValue, !str.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
                     self?.reminders = []
-                    Log.info("[Reminders] Empty result")
                     return
                 }
 
@@ -61,11 +61,12 @@ final class RemindersManager {
                 self?.reminders = lines.compactMap { line in
                     let parts = line.components(separatedBy: "||")
                     guard parts.count >= 3 else { return nil }
+                    let due = parts.count > 3 ? parts[3].trimmingCharacters(in: .whitespaces) : ""
                     return SimpleReminder(
                         id: parts[0].trimmingCharacters(in: .whitespaces),
                         title: parts[1].trimmingCharacters(in: .whitespaces),
                         listName: parts[2].trimmingCharacters(in: .whitespaces),
-                        dueDate: parts.count > 3 ? parts[3].trimmingCharacters(in: .whitespaces) : ""
+                        dueDate: due == "missing value" ? "" : due
                     )
                 }
                 Log.info("[Reminders] Loaded \(self?.reminders.count ?? 0)")
@@ -74,7 +75,6 @@ final class RemindersManager {
     }
 
     func createReminder(title: String) {
-        Log.info("[Reminders] Creating: '\(title)'")
         let escaped = title.replacingOccurrences(of: "\"", with: "\\\"")
         let source = """
         tell application "Reminders"
@@ -83,57 +83,43 @@ final class RemindersManager {
             end tell
         end tell
         """
-
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var error: NSDictionary?
             NSAppleScript(source: source)?.executeAndReturnError(&error)
-
-            DispatchQueue.main.async {
-                if let err = error {
-                    Log.info("[Reminders] Create error: \(err)")
-                    // Fallback: try without specifying list
-                    self?.createReminderFallback(title: title)
-                } else {
-                    Log.info("[Reminders] Created OK")
-                    self?.fetchReminders()
-                }
+            if let err = error {
+                // Fallback to first list
+                let fallback = """
+                tell application "Reminders"
+                    tell first list
+                        make new reminder with properties {name:"\(escaped)"}
+                    end tell
+                end tell
+                """
+                NSAppleScript(source: fallback)?.executeAndReturnError(nil)
             }
+            DispatchQueue.main.async { self?.fetchReminders() }
         }
     }
 
-    private func createReminderFallback(title: String) {
-        let escaped = title.replacingOccurrences(of: "\"", with: "\\\"")
-        let source = """
-        tell application "Reminders"
-            set targetList to first list
-            tell targetList
-                make new reminder with properties {name:"\(escaped)"}
-            end tell
-        end tell
-        """
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            var error: NSDictionary?
-            NSAppleScript(source: source)?.executeAndReturnError(&error)
-            DispatchQueue.main.async {
-                if let err = error {
-                    Log.info("[Reminders] Fallback create error: \(err)")
-                } else {
-                    Log.info("[Reminders] Fallback created OK")
-                }
-                self?.fetchReminders()
-            }
-        }
-    }
-
-    func toggleCompletion(_ reminder: SimpleReminder) {
+    func completeReminder(_ reminder: SimpleReminder) {
         let source = """
         tell application "Reminders"
             set r to (first reminder whose id is "\(reminder.id)")
             set completed of r to true
         end tell
         """
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            NSAppleScript(source: source)?.executeAndReturnError(nil)
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { self?.fetchReminders() }
+        }
+    }
 
+    func deleteReminder(_ reminder: SimpleReminder) {
+        let source = """
+        tell application "Reminders"
+            delete (first reminder whose id is "\(reminder.id)")
+        end tell
+        """
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             NSAppleScript(source: source)?.executeAndReturnError(nil)
             DispatchQueue.main.async { self?.fetchReminders() }
@@ -145,29 +131,16 @@ final class RemindersManager {
             var error: NSDictionary?
             let countResult = NSAppleScript(source: "tell application \"Reminders\" to count of lists")?
                 .executeAndReturnError(&error)
-
-            if let err = error {
-                Log.info("[Reminders] Count error: \(err)")
-                DispatchQueue.main.async { self?.noListsAvailable = true }
-                return
-            }
-
             let count = countResult?.int32Value ?? 0
             if count == 0 {
                 var createError: NSDictionary?
-                NSAppleScript(source: """
-                    tell application "Reminders"
-                        make new list with properties {name:"Notchy"}
-                    end tell
-                """)?.executeAndReturnError(&createError)
-
+                NSAppleScript(source: "tell application \"Reminders\" to make new list with properties {name:\"Notchy\"}")?
+                    .executeAndReturnError(&createError)
                 if createError != nil {
-                    Log.info("[Reminders] Cannot create list")
                     DispatchQueue.main.async { self?.noListsAvailable = true }
                     return
                 }
             }
-
             DispatchQueue.main.async { self?.fetchReminders() }
         }
     }

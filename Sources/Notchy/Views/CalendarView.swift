@@ -81,10 +81,21 @@ struct CalendarView: View {
                 } else {
                     VStack(spacing: 6) {
                         ForEach(calendar.events, id: \.eventIdentifier) { event in
-                            eventRow(event)
-                                .onTapGesture { calendar.openInCalendar(event) }
+                            EventRow(event: event,
+                                     onTap: { calendar.openInCalendar(event) },
+                                     onDelete: {
+                                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                                            calendar.deleteEvent(event)
+                                        }
+                                     },
+                                     isOngoing: isOngoing(event))
+                                .transition(.asymmetric(
+                                    insertion: .scale(scale: 0.9).combined(with: .opacity),
+                                    removal: .move(edge: .leading).combined(with: .opacity)
+                                ))
                         }
                     }
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: calendar.events.map(\.eventIdentifier))
                 }
             }
         }
@@ -165,7 +176,23 @@ struct CalendarView: View {
         }
     }
 
-    private func eventRow(_ event: EKEvent) -> some View {
+    private func isOngoing(_ event: EKEvent) -> Bool {
+        guard !event.isAllDay else { return false }
+        let now = Date()
+        return event.startDate <= now && event.endDate >= now
+    }
+}
+
+struct EventRow: View {
+    let event: EKEvent
+    let onTap: () -> Void
+    let onDelete: () -> Void
+    let isOngoing: Bool
+
+    @State private var isHovered = false
+    @State private var deleteHovered = false
+
+    var body: some View {
         HStack(spacing: 10) {
             RoundedRectangle(cornerRadius: 2)
                 .fill(Color(cgColor: event.calendar.cgColor))
@@ -173,43 +200,42 @@ struct CalendarView: View {
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(event.title ?? "Sans titre")
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-
+                    .font(.system(size: 12, weight: .medium)).foregroundStyle(.white).lineLimit(1)
                 if event.isAllDay {
                     Text("Toute la journée").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
                 } else {
-                    Text(timeRange(event)).font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
+                    let fmt = DateFormatter()
+                    let _ = fmt.dateFormat = "HH:mm"
+                    Text("\(fmt.string(from: event.startDate)) – \(fmt.string(from: event.endDate))")
+                        .font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
                 }
             }
 
             Spacer()
 
-            if isOngoing(event) {
-                Text("En cours")
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(.green)
+            if isOngoing {
+                Text("En cours").font(.system(size: 9, weight: .semibold)).foregroundStyle(.green)
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(Capsule().fill(.green.opacity(0.15)))
             }
 
-            Image(systemName: "arrow.up.right")
-                .font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+            if isHovered && event.calendar.allowsContentModifications {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundStyle(deleteHovered ? .red : .white.opacity(0.3))
+                    .scaleEffect(deleteHovered ? 1.1 : 1.0)
+                    .onHover { deleteHovered = $0 }
+                    .onTapGesture { onDelete() }
+                    .transition(.scale.combined(with: .opacity))
+            } else {
+                Image(systemName: "arrow.up.right")
+                    .font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+            }
         }
         .padding(.horizontal, 10).padding(.vertical, 8)
         .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.05)))
         .contentShape(Rectangle())
-    }
-
-    private func timeRange(_ event: EKEvent) -> String {
-        let fmt = DateFormatter(); fmt.dateFormat = "HH:mm"
-        return "\(fmt.string(from: event.startDate)) – \(fmt.string(from: event.endDate))"
-    }
-
-    private func isOngoing(_ event: EKEvent) -> Bool {
-        guard !event.isAllDay else { return false }
-        let now = Date()
-        return event.startDate <= now && event.endDate >= now
+        .onTapGesture { onTap() }
+        .onHover { h in withAnimation(.easeInOut(duration: 0.1)) { isHovered = h } }
     }
 }

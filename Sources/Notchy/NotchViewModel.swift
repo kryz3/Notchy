@@ -64,6 +64,7 @@ final class NotchViewModel {
     private var collapseWorkItem: DispatchWorkItem?
 
     init() {
+        music.settings = settings
         audioDevice.onDeviceConnected = { [weak self] name in
             self?.showDeviceNotification(name: name)
         }

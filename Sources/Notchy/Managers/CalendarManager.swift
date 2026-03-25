@@ -111,6 +111,16 @@ final class CalendarManager {
         NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Calendar.app"))
     }
 
+    func deleteEvent(_ event: EKEvent) {
+        do {
+            try store.remove(event, span: .thisEvent)
+            Log.info("[Calendar] Deleted: \(event.title ?? "")")
+        } catch {
+            Log.info("[Calendar] Delete failed: \(error)")
+        }
+        fetchEvents()
+    }
+
     func refresh() {
         store = EKEventStore()
         fetchEvents()

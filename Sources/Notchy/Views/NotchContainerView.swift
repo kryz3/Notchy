@@ -126,9 +126,9 @@ struct NotchContainerView: View {
     // MARK: - Settings panel
 
     private var settingsPanel: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             HStack {
-                Text("Apparence")
+                Text("Réglages")
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
                 Spacer()
@@ -139,9 +139,67 @@ struct NotchContainerView: View {
                 }
             }
 
-            HStack(spacing: 12) {
-                ForEach(NotchTheme.allCases, id: \.rawValue) { theme in
-                    themeCard(theme)
+            // Theme
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Apparence").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                HStack(spacing: 12) {
+                    ForEach(NotchTheme.allCases, id: \.rawValue) { theme in
+                        themeCard(theme)
+                    }
+                }
+            }
+
+            // Queue size
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("File d'attente").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                    Spacer()
+                    Text("\(vm.settings.queueSize) morceaux").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
+                }
+                HStack(spacing: 8) {
+                    Text("3").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+                    Slider(value: Binding(
+                        get: { Double(vm.settings.queueSize) },
+                        set: { vm.settings.queueSize = Int($0) }
+                    ), in: 3...20, step: 1)
+                    .tint(.white.opacity(0.5))
+                    Text("20").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+                }
+            }
+
+            // Music history
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Historique musique").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                    Spacer()
+                    Text("\(vm.settings.musicHistorySize) morceaux").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
+                }
+                HStack(spacing: 8) {
+                    Text("3").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+                    Slider(value: Binding(
+                        get: { Double(vm.settings.musicHistorySize) },
+                        set: { vm.settings.musicHistorySize = Int($0) }
+                    ), in: 3...30, step: 1)
+                    .tint(.white.opacity(0.5))
+                    Text("30").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+                }
+            }
+
+            // Terminal history
+            VStack(alignment: .leading, spacing: 6) {
+                HStack {
+                    Text("Historique terminal").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                    Spacer()
+                    Text("\(vm.settings.terminalHistorySize)").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
+                }
+                HStack(spacing: 8) {
+                    Text("20").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+                    Slider(value: Binding(
+                        get: { Double(vm.settings.terminalHistorySize) },
+                        set: { vm.settings.terminalHistorySize = Int($0) }
+                    ), in: 20...500, step: 10)
+                    .tint(.white.opacity(0.5))
+                    Text("500").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
                 }
             }
 
