@@ -7,10 +7,10 @@ enum RightTab: Int, CaseIterable, Identifiable {
 
     var label: String {
         switch self {
-        case .calendar: "Calendrier"
-        case .reminders: "Rappels"
-        case .notes: "Notes"
-        case .terminal: "Terminal"
+        case .calendar: L.calendar
+        case .reminders: L.reminders
+        case .notes: L.notes
+        case .terminal: L.terminal
         }
     }
 
@@ -41,7 +41,8 @@ final class NotchViewModel {
     let reminders = RemindersManager()
     let stickyNote = StickyNoteManager()
     let audioDevice = AudioDeviceManager()
-    let settings = SettingsManager()
+    var settings = SettingsManager()
+    let updater = UpdateManager()
 
     // Notch geometry
     var notchInfo: NotchInfo = ScreenHelper.detectNotch()

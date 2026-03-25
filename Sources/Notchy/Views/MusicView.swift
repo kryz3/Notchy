@@ -55,7 +55,7 @@ struct MusicView: View {
                 controlButtons
                 secondaryButtons
             } else {
-                Text("Rien en lecture").font(.system(size: 12)).foregroundStyle(.white.opacity(0.4))
+                Text(L.nothingPlaying).font(.system(size: 12)).foregroundStyle(.white.opacity(0.4))
                 TapIcon("play.circle.fill", size: 28, color: .white.opacity(0.5)) { shufflePlay() }
             }
             Spacer(minLength: 0)
@@ -82,7 +82,7 @@ struct MusicView: View {
                             .frame(width: 80, height: 80).clipShape(RoundedRectangle(cornerRadius: 10))
                     }
                     Text(music.artist).font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
-                    Text("Album non disponible\ndans la bibliothèque")
+                    Text(L.albumNotInLibrary)
                         .font(.system(size: 10)).foregroundStyle(.white.opacity(0.25))
                         .multilineTextAlignment(.center)
                     TapIcon("arrow.up.right.circle", size: 16, color: .white.opacity(0.4)) {
@@ -97,7 +97,7 @@ struct MusicView: View {
                         music.playFullAlbum()
                         subView = .player
                     }
-                    Text("Tout lire").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
+                    Text(L.playAll).font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
                 }
 
                 ScrollView(.vertical, showsIndicators: false) {
@@ -145,12 +145,12 @@ struct MusicView: View {
                 // Tabs only if queue is available
                 if music.hasQueue {
                     HStack(spacing: 0) {
-                        tabBtn("À suivre", selected: !showHistory) { showHistory = false }
-                        tabBtn("Historique", selected: showHistory) { showHistory = true }
+                        tabBtn(L.upNext, selected: !showHistory) { showHistory = false }
+                        tabBtn(L.history, selected: showHistory) { showHistory = true }
                     }
                     .background(RoundedRectangle(cornerRadius: 6).fill(.white.opacity(0.06)))
                 } else {
-                    Text("Historique")
+                    Text(L.history)
                         .font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
                 }
             }
@@ -190,7 +190,7 @@ struct MusicView: View {
                 VStack {
                     Spacer()
                     Image(systemName: "clock").font(.system(size: 20)).foregroundStyle(.white.opacity(0.2))
-                    Text("Pas encore d'historique").font(.system(size: 11)).foregroundStyle(.white.opacity(0.3))
+                    Text(L.noHistory).font(.system(size: 11)).foregroundStyle(.white.opacity(0.3))
                     Spacer()
                 }
             } else {

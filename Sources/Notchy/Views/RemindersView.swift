@@ -10,7 +10,7 @@ struct RemindersView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("Rappels").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
+                Text(L.reminders).font(.system(size: 13, weight: .semibold)).foregroundStyle(.white)
                 Spacer()
                 Text("\(reminders.reminders.count)").font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
                 TapIcon("plus.circle.fill", size: 16, color: .white.opacity(0.5)) {
@@ -23,7 +23,7 @@ struct RemindersView: View {
 
             if showAddField {
                 HStack(spacing: 8) {
-                    TextField("Nouveau rappel...", text: $newReminderTitle)
+                    TextField(L.newReminder, text: $newReminderTitle)
                         .textFieldStyle(.plain).font(.system(size: 12)).foregroundStyle(.white)
                         .padding(8)
                         .background(RoundedRectangle(cornerRadius: 6).fill(.white.opacity(0.1)))
@@ -41,9 +41,9 @@ struct RemindersView: View {
                     VStack(spacing: 8) {
                         Image(systemName: reminders.noListsAvailable ? "list.bullet.rectangle" : "lock.shield")
                             .font(.system(size: 24)).foregroundStyle(.white.opacity(0.3))
-                        Text(reminders.noListsAvailable ? "Ouvre Rappels et crée une liste" : "Accès aux rappels requis")
+                        Text(reminders.noListsAvailable ? L.openReminders : L.accessRequired)
                             .font(.system(size: 12)).foregroundStyle(.white.opacity(0.4)).multilineTextAlignment(.center)
-                        Button(reminders.noListsAvailable ? "Ouvrir Rappels" : "Ouvrir les Réglages") {
+                        Button(reminders.noListsAvailable ? L.openReminderApp : L.openSettings) {
                             if reminders.noListsAvailable {
                                 NSWorkspace.shared.open(URL(fileURLWithPath: "/System/Applications/Reminders.app"))
                             } else { reminders.openSettings() }
@@ -61,7 +61,7 @@ struct RemindersView: View {
                     Spacer()
                     VStack(spacing: 6) {
                         Image(systemName: "checkmark.circle").font(.system(size: 24)).foregroundStyle(.white.opacity(0.2))
-                        Text("Tout est fait !").font(.system(size: 12)).foregroundStyle(.white.opacity(0.3))
+                        Text(L.allDone).font(.system(size: 12)).foregroundStyle(.white.opacity(0.3))
                     }
                     Spacer()
                 }

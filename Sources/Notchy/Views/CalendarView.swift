@@ -17,7 +17,7 @@ struct CalendarView: View {
                 }
 
                 if calendar.isToday {
-                    Text("Aujourd'hui")
+                    Text(L.today)
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.white)
                 } else {
@@ -35,7 +35,7 @@ struct CalendarView: View {
 
                 if !calendar.isToday {
                     Button { calendar.goToToday() } label: {
-                        Text("Auj.")
+                        Text(L.todayShort)
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.white.opacity(0.5))
                             .padding(.horizontal, 6)
@@ -73,7 +73,7 @@ struct CalendarView: View {
                         Image(systemName: "calendar")
                             .font(.system(size: 24))
                             .foregroundStyle(.white.opacity(0.2))
-                        Text("Aucun événement")
+                        Text(L.noEvents)
                             .font(.system(size: 12))
                             .foregroundStyle(.white.opacity(0.3))
                     }
@@ -103,7 +103,7 @@ struct CalendarView: View {
 
     private var dateString: String {
         let fmt = DateFormatter()
-        fmt.locale = Locale(identifier: "fr_FR")
+        fmt.locale = L.dateLocale
         fmt.dateFormat = Calendar.current.isDate(calendar.selectedDate, equalTo: Date(), toGranularity: .year)
             ? "EEEE d MMMM" : "EEEE d MMMM yyyy"
         return fmt.string(from: calendar.selectedDate).capitalized
@@ -111,7 +111,7 @@ struct CalendarView: View {
 
     private var quickAddForm: some View {
         VStack(spacing: 8) {
-            TextField("Titre", text: $newEventTitle)
+            TextField(L.eventTitle, text: $newEventTitle)
                 .textFieldStyle(.plain)
                 .font(.system(size: 12))
                 .foregroundStyle(.white)
@@ -125,7 +125,7 @@ struct CalendarView: View {
                     .colorScheme(.dark)
                     .frame(width: 90)
                 Spacer()
-                Button("Ajouter") { createEvent() }
+                Button(L.add) { createEvent() }
                     .buttonStyle(.plain)
                     .font(.system(size: 11, weight: .semibold))
                     .foregroundStyle(.black)
@@ -202,7 +202,7 @@ struct EventRow: View {
                 Text(event.title ?? "Sans titre")
                     .font(.system(size: 12, weight: .medium)).foregroundStyle(.white).lineLimit(1)
                 if event.isAllDay {
-                    Text("Toute la journée").font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
+                    Text(L.allDay).font(.system(size: 10)).foregroundStyle(.white.opacity(0.4))
                 } else {
                     let fmt = DateFormatter()
                     let _ = fmt.dateFormat = "HH:mm"
@@ -214,7 +214,7 @@ struct EventRow: View {
             Spacer()
 
             if isOngoing {
-                Text("En cours").font(.system(size: 9, weight: .semibold)).foregroundStyle(.green)
+                Text(L.ongoing).font(.system(size: 9, weight: .semibold)).foregroundStyle(.green)
                     .padding(.horizontal, 6).padding(.vertical, 2)
                     .background(Capsule().fill(.green.opacity(0.15)))
             }

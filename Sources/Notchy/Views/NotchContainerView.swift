@@ -9,15 +9,8 @@ struct NotchContainerView: View {
 
     var body: some View {
         ZStack(alignment: .top) {
-            // Notification banner
-            if vm.showNotification && !vm.isExpanded {
-                notificationBanner
-                    .transition(.scale(scale: 0.8).combined(with: .opacity))
-            }
-
-            // Background + content clipped
+            // Main notch content
             ZStack(alignment: .top) {
-                // Theme-aware background
                 notchBackground
 
                 if vm.isExpanded {
@@ -41,8 +34,19 @@ struct NotchContainerView: View {
                     .opacity(vm.isExpanded ? 1 : 0)
                 }
             }
-            .frame(width: currentWidth, height: currentHeight)
+            .frame(
+                width: vm.isExpanded ? vm.expandedWidth : vm.notchWidth,
+                height: vm.isExpanded ? vm.expandedHeight : vm.notchHeight
+            )
             .clipShape(RoundedRectangle(cornerRadius: vm.isExpanded ? vm.expandedCornerRadius : vm.collapsedCornerRadius))
+
+            // Notification pill — flush with right edge of notch
+            if vm.showNotification && !vm.isExpanded {
+                notificationPill
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .offset(x: (vm.expandedWidth + vm.notchWidth) / 2 - 8)
+                    .transition(.offset(x: -90).combined(with: .opacity))
+            }
         }
         .frame(width: vm.expandedWidth, height: vm.expandedHeight, alignment: .top)
         .onReceive(clockTimer) { currentTime = $0 }
@@ -75,15 +79,9 @@ struct NotchContainerView: View {
         }
     }
 
-    private var currentWidth: CGFloat {
-        if vm.showNotification && !vm.isExpanded { return vm.notificationWidth }
-        return vm.isExpanded ? vm.expandedWidth : vm.notchWidth
-    }
-
-    private var currentHeight: CGFloat {
-        if vm.showNotification && !vm.isExpanded { return vm.notificationHeight }
-        return vm.isExpanded ? vm.expandedHeight : vm.notchHeight
-    }
+    // These are only for the main notch shape (notification is separate)
+    private var currentWidth: CGFloat { vm.isExpanded ? vm.expandedWidth : vm.notchWidth }
+    private var currentHeight: CGFloat { vm.isExpanded ? vm.expandedHeight : vm.notchHeight }
 
     // MARK: - Clock
 
@@ -119,16 +117,16 @@ struct NotchContainerView: View {
     }
 
     private var dateString: String {
-        let fmt = DateFormatter(); fmt.locale = Locale(identifier: "fr_FR"); fmt.dateFormat = "EEE d MMM"
+        let fmt = DateFormatter(); fmt.locale = L.dateLocale; fmt.dateFormat = "EEE d MMM"
         return fmt.string(from: currentTime).capitalized
     }
 
     // MARK: - Settings panel
 
     private var settingsPanel: some View {
-        VStack(spacing: 14) {
+        VStack(spacing: 0) {
             HStack {
-                Text("Réglages")
+                Text(L.settings)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(.white)
                 Spacer()
@@ -138,72 +136,185 @@ struct NotchContainerView: View {
                     }
                 }
             }
+            .padding(.bottom, 12)
+
+            ScrollView(.vertical, showsIndicators: false) {
+                VStack(spacing: 14) {
 
             // Theme
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Apparence").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+            settingsSection(L.appearance) {
                 HStack(spacing: 12) {
-                    ForEach(NotchTheme.allCases, id: \.rawValue) { theme in
-                        themeCard(theme)
+                    ForEach(NotchTheme.allCases, id: \.rawValue) { theme in themeCard(theme) }
+                }
+            }
+
+            // Language
+            settingsSection(L.language) {
+                HStack(spacing: 8) {
+                    ForEach(AppLanguage.allCases, id: \.rawValue) { lang in
+                        Button {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.85)) {
+                                vm.settings.language = lang
+                            }
+                        } label: {
+                            Text(lang.rawValue)
+                                .font(.system(size: 11, weight: vm.settings.language == lang ? .semibold : .regular))
+                                .foregroundStyle(vm.settings.language == lang ? .white : .white.opacity(0.4))
+                                .padding(.horizontal, 12).padding(.vertical, 5)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(vm.settings.language == lang ? .white.opacity(0.12) : .white.opacity(0.04))
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
             }
 
             // Queue size
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("File d'attente").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
-                    Spacer()
-                    Text("\(vm.settings.queueSize) morceaux").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
-                }
-                HStack(spacing: 8) {
-                    Text("3").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
-                    Slider(value: Binding(
-                        get: { Double(vm.settings.queueSize) },
-                        set: { vm.settings.queueSize = Int($0) }
-                    ), in: 3...20, step: 1)
-                    .tint(.white.opacity(0.5))
-                    Text("20").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
-                }
-            }
+            settingsSlider(L.queueSize, value: $vm.settings.queueSize, unit: L.tracks, range: 3...20, step: 1)
 
             // Music history
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Historique musique").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
-                    Spacer()
-                    Text("\(vm.settings.musicHistorySize) morceaux").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
-                }
-                HStack(spacing: 8) {
-                    Text("3").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
-                    Slider(value: Binding(
-                        get: { Double(vm.settings.musicHistorySize) },
-                        set: { vm.settings.musicHistorySize = Int($0) }
-                    ), in: 3...30, step: 1)
-                    .tint(.white.opacity(0.5))
-                    Text("30").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
-                }
-            }
+            settingsSlider(L.musicHistory, value: $vm.settings.musicHistorySize, unit: L.tracks, range: 3...30, step: 1)
 
             // Terminal history
-            VStack(alignment: .leading, spacing: 6) {
-                HStack {
-                    Text("Historique terminal").font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
-                    Spacer()
-                    Text("\(vm.settings.terminalHistorySize)").font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
+            settingsSlider(L.terminalHistory, value: $vm.settings.terminalHistorySize, unit: "", range: 20...500, step: 10)
+
+            // Launch at login
+            HStack {
+                Toggle(isOn: Binding(
+                    get: { vm.settings.launchAtLogin },
+                    set: { vm.settings.launchAtLogin = $0 }
+                )) {
+                    Text(L.launchAtLogin)
+                        .font(.system(size: 11, weight: .medium))
+                        .foregroundStyle(.white.opacity(0.7))
                 }
-                HStack(spacing: 8) {
-                    Text("20").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
-                    Slider(value: Binding(
-                        get: { Double(vm.settings.terminalHistorySize) },
-                        set: { vm.settings.terminalHistorySize = Int($0) }
-                    ), in: 20...500, step: 10)
-                    .tint(.white.opacity(0.5))
-                    Text("500").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+                .toggleStyle(.switch)
+                .tint(.green)
+            }
+
+            // Credit + GitHub
+            VStack(spacing: 4) {
+                HStack(spacing: 4) {
+                    Text(L.createdBy).font(.system(size: 10)).foregroundStyle(.white.opacity(0.2))
+                    Button {
+                        NSWorkspace.shared.open(URL(string: "https://github.com/kryz3")!)
+                    } label: {
+                        Text("kryz3").font(.system(size: 10, weight: .medium)).foregroundStyle(.white.opacity(0.35))
+                    }
+                    .buttonStyle(.plain)
+                }
+                Button {
+                    NSWorkspace.shared.open(URL(string: "https://github.com/kryz3/Notchy")!)
+                } label: {
+                    HStack(spacing: 4) {
+                        Image(systemName: "chevron.left.forwardslash.chevron.right").font(.system(size: 9))
+                        Text("GitHub").font(.system(size: 10))
+                    }
+                    .foregroundStyle(.white.opacity(0.2))
+                }
+                .buttonStyle(.plain)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, 4)
+
+            // Update
+            updateSection
+
+            // Quit
+            Button {
+                vm.settings.quit()
+            } label: {
+                HStack(spacing: 5) {
+                    Image(systemName: "power").font(.system(size: 10))
+                    Text(L.quit).font(.system(size: 11, weight: .medium))
+                }
+                .foregroundStyle(.red.opacity(0.7))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 6)
+                .background(RoundedRectangle(cornerRadius: 8).fill(.red.opacity(0.1)))
+            }
+            .buttonStyle(.plain)
+            .padding(.top, 4)
+                }
+            }
+        }
+    }
+
+    private func settingsSection<Content: View>(_ title: String, @ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+            content()
+        }
+    }
+
+    private var updateSection: some View {
+        VStack(spacing: 8) {
+            HStack {
+                Text("v\(UpdateManager.currentVersion)")
+                    .font(.system(size: 10, design: .monospaced)).foregroundStyle(.white.opacity(0.25))
+                Spacer()
+
+                if vm.updater.isUpdating {
+                    HStack(spacing: 6) {
+                        ProgressView().scaleEffect(0.5).frame(width: 12, height: 12)
+                        Text(vm.updater.updateProgress).font(.system(size: 10)).foregroundStyle(.white.opacity(0.5))
+                    }
+                } else if vm.updater.updateAvailable {
+                    Button {
+                        vm.updater.performUpdate()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.down.circle.fill").font(.system(size: 10))
+                            Text(L.lang == .fr ? "Mettre à jour (\(vm.updater.latestVersion ?? ""))" : "Update (\(vm.updater.latestVersion ?? ""))")
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundStyle(.green)
+                        .padding(.horizontal, 10).padding(.vertical, 4)
+                        .background(RoundedRectangle(cornerRadius: 6).fill(.green.opacity(0.12)))
+                    }
+                    .buttonStyle(.plain)
+                } else if vm.updater.isChecking {
+                    ProgressView().scaleEffect(0.5).frame(width: 12, height: 12)
+                } else if vm.updater.checkedOnce && !vm.updater.updateAvailable {
+                    Text(L.lang == .fr ? "À jour" : "Up to date")
+                        .font(.system(size: 10)).foregroundStyle(.green.opacity(0.6))
+                } else {
+                    Button {
+                        vm.updater.checkForUpdates()
+                    } label: {
+                        Text(L.lang == .fr ? "Vérifier" : "Check")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.white.opacity(0.4))
+                            .padding(.horizontal, 10).padding(.vertical, 4)
+                            .background(RoundedRectangle(cornerRadius: 6).fill(.white.opacity(0.06)))
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
-            Spacer()
+            if let error = vm.updater.error {
+                Text(error).font(.system(size: 9)).foregroundStyle(.red.opacity(0.6))
+            }
+        }
+    }
+
+    private func settingsSlider(_ title: String, value: Binding<Int>, unit: String, range: ClosedRange<Double>, step: Double) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text(title).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                Spacer()
+                Text(unit.isEmpty ? "\(value.wrappedValue)" : "\(value.wrappedValue) \(unit)")
+                    .font(.system(size: 10)).foregroundStyle(.white.opacity(0.3))
+            }
+            HStack(spacing: 8) {
+                Text("\(Int(range.lowerBound))").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+                Slider(value: Binding(get: { Double(value.wrappedValue) }, set: { value.wrappedValue = Int($0) }),
+                       in: range, step: step).tint(.white.opacity(0.5))
+                Text("\(Int(range.upperBound))").font(.system(size: 9)).foregroundStyle(.white.opacity(0.3))
+            }
         }
     }
 
@@ -254,19 +365,32 @@ struct NotchContainerView: View {
         .buttonStyle(.plain)
     }
 
-    // MARK: - Notification banner
+    // MARK: - Notification pill (right of notch, same height, always black)
 
-    private var notificationBanner: some View {
-        HStack(spacing: 12) {
+    private var notificationPill: some View {
+        HStack(spacing: 8) {
             Image(systemName: vm.notificationIcon ?? "headphones")
-                .font(.system(size: 20)).foregroundStyle(.white)
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Connecté").font(.system(size: 10)).foregroundStyle(.white.opacity(0.5))
-                Text(vm.notificationText ?? "").font(.system(size: 13, weight: .semibold)).foregroundStyle(.white).lineLimit(1)
-            }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(.white)
+
+            Text(vm.notificationText ?? "")
+                .font(.system(size: 11, weight: .semibold))
+                .foregroundStyle(.white)
+                .lineLimit(1)
         }
-        .padding(.top, vm.notchHeight + 4)
-        .frame(width: vm.notificationWidth, height: vm.notificationHeight, alignment: .center)
+        .padding(.leading, 12)
+        .padding(.trailing, 16)
+        .frame(height: vm.notchHeight - 1)
+        .background(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 2,
+                bottomLeadingRadius: 2,
+                bottomTrailingRadius: 8,
+                topTrailingRadius: 8
+            )
+            .fill(.black)
+        )
+        .fixedSize()
     }
 
     // MARK: - Expanded content
