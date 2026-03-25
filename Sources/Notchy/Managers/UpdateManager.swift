@@ -2,7 +2,7 @@ import AppKit
 
 @Observable
 final class UpdateManager {
-    static let currentVersion = "1.0.0"
+    static let currentVersion = "0.0.1"
     static let repoOwner = "kryz3"
     static let repoName = "Notchy"
 
