@@ -36,6 +36,7 @@ mkdir -p "${APP_BUNDLE}/Contents/MacOS"
 mkdir -p "${APP_BUNDLE}/Contents/Resources"
 cp "${BUILD_DIR}/${APP_NAME}" "${APP_BUNDLE}/Contents/MacOS/"
 cp Resources/Info.plist "${APP_BUNDLE}/Contents/"
+cp Resources/AppIcon.icns "${APP_BUNDLE}/Contents/Resources/" 2>/dev/null || true
 codesign --force --sign - "${APP_BUNDLE}"
 
 echo "Done! Run with: open ${APP_BUNDLE}"

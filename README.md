@@ -16,11 +16,15 @@ Transform your MacBook's notch into a Dynamic Island. Hover to reveal a producti
 
 **Terminal** — Built-in zsh with tab autocompletion and persistent command history.
 
-**System** — Clock display, audio device notifications (AirPods), glassmorphism theme option, launch at login.
+**System** — Clock display, audio device notifications (AirPods), glassmorphism theme, FR/EN language, auto-updates, launch at login.
 
 ## Install
 
-Download the latest `Notchy.dmg` from [Releases](https://github.com/kryz3/Notchy/releases), open it and drag **Notchy.app** into **Applications**.
+1. Download `Notchy.dmg` from [Releases](https://github.com/kryz3/Notchy/releases)
+2. Open the DMG and drag **Notchy.app** into **Applications**
+3. **First launch** : right-click Notchy.app → **Open** (required once because the app is not signed with an Apple Developer certificate)
+
+Updates are automatic — check from Settings inside the app.
 
 ### Build from source
 
@@ -30,8 +34,6 @@ cd Notchy
 bash build.sh
 open Notchy.app
 ```
-
-To generate the DMG: `bash make-dmg.sh`
 
 Requires macOS 14+, Swift toolchain, and a MacBook with notch.
 

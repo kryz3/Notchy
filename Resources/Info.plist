@@ -12,6 +12,8 @@
     <string>0.0.1</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleExecutable</key>
     <string>Notchy</string>
     <key>LSMinimumSystemVersion</key>
