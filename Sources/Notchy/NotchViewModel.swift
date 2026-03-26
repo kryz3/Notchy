@@ -1,7 +1,7 @@
 import SwiftUI
 
 enum RightTab: Int, CaseIterable, Identifiable {
-    case calendar, reminders, notes, terminal
+    case calendar, reminders, notes, clipboard, terminal
 
     var id: Int { rawValue }
 
@@ -10,6 +10,7 @@ enum RightTab: Int, CaseIterable, Identifiable {
         case .calendar: L.calendar
         case .reminders: L.reminders
         case .notes: L.notes
+        case .clipboard: "Clipboard"
         case .terminal: L.terminal
         }
     }
@@ -19,6 +20,7 @@ enum RightTab: Int, CaseIterable, Identifiable {
         case .calendar: "calendar"
         case .reminders: "checklist"
         case .notes: "note.text"
+        case .clipboard: "doc.on.clipboard"
         case .terminal: "terminal"
         }
     }
@@ -40,7 +42,10 @@ final class NotchViewModel {
     let calendar = CalendarManager()
     let reminders = RemindersManager()
     let stickyNote = StickyNoteManager()
-    let audioDevice = AudioDeviceManager()
+    let systemMonitor = SystemMonitorManager()
+    let weather = WeatherManager()
+    var timer = TimerManager()
+    let clipboard = ClipboardManager()
     var settings = SettingsManager()
     let updater = UpdateManager()
 
@@ -58,17 +63,23 @@ final class NotchViewModel {
     var notchWidth: CGFloat { notchInfo.notchWidth }
     var notchHeight: CGFloat { notchInfo.notchHeight }
 
-    // Callback for AppDelegate to toggle panel.ignoresMouseEvents
+    // Compact mode
+    var isCompactVisible: Bool {
+        settings.compactMode == .musicOnly && music.hasTrack && !isExpanded
+    }
+    let compactWidth: CGFloat = 380
+    let compactHeight: CGFloat = 40
+
+    // Callbacks for AppDelegate
     var onExpandChanged: ((Bool) -> Void)?
+    var isHovering = false
 
     // Timers
     private var collapseWorkItem: DispatchWorkItem?
 
     init() {
         music.settings = settings
-        audioDevice.onDeviceConnected = { [weak self] name in
-            self?.showDeviceNotification(name: name)
-        }
+        calendar.settings = settings
     }
 
     func expand() {

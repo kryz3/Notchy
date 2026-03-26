@@ -22,6 +22,8 @@ final class CalendarManager {
         Calendar.current.isDateInToday(selectedDate)
     }
 
+    var settings: SettingsManager?
+
     private var store = EKEventStore()
 
     init() {
@@ -56,7 +58,9 @@ final class CalendarManager {
         guard let end = cal.date(byAdding: .day, value: 1, to: start) else { return }
 
         let predicate = store.predicateForEvents(withStart: start, end: end, calendars: nil)
+        let hidden = settings?.hiddenCalendarIds ?? []
         events = store.events(matching: predicate)
+            .filter { !hidden.contains($0.calendar.calendarIdentifier) }
             .sorted { ($0.startDate ?? .distantPast) < ($1.startDate ?? .distantPast) }
     }
 

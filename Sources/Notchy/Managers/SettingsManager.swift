@@ -5,6 +5,37 @@ enum NotchTheme: String, CaseIterable {
     case glass = "Glass"
 }
 
+enum AccentColor: String, CaseIterable {
+    case white = "White"
+    case blue = "Blue"
+    case purple = "Purple"
+    case green = "Green"
+    case orange = "Orange"
+    case pink = "Pink"
+    case red = "Red"
+    case yellow = "Yellow"
+    case sand = "Sand"
+
+    var color: (r: Double, g: Double, b: Double) {
+        switch self {
+        case .white:  return (1.0, 1.0, 1.0)
+        case .blue:   return (0.3, 0.55, 1.0)
+        case .purple: return (0.65, 0.4, 1.0)
+        case .green:  return (0.3, 0.85, 0.45)
+        case .orange: return (1.0, 0.6, 0.2)
+        case .pink:   return (1.0, 0.4, 0.6)
+        case .red:    return (1.0, 0.3, 0.3)
+        case .yellow: return (1.0, 0.85, 0.2)
+        case .sand:   return (0.82, 0.72, 0.55)
+        }
+    }
+}
+
+enum CompactStyle: String, CaseIterable {
+    case off = "Off"
+    case musicOnly = "Music"
+}
+
 enum MusicPlayerSource: String, CaseIterable {
     case appleMusic = "Apple Music"
     case spotify = "Spotify"
@@ -29,6 +60,14 @@ final class SettingsManager {
         didSet { UserDefaults.standard.set(musicHistorySize, forKey: "notchy.musicHistorySize") }
     }
 
+    var accentColor: AccentColor {
+        didSet { UserDefaults.standard.set(accentColor.rawValue, forKey: "notchy.accent") }
+    }
+
+    var compactMode: CompactStyle {
+        didSet { UserDefaults.standard.set(compactMode.rawValue, forKey: "notchy.compact") }
+    }
+
     var musicPlayer: MusicPlayerSource {
         didSet { UserDefaults.standard.set(musicPlayer.rawValue, forKey: "notchy.musicPlayer") }
     }
@@ -38,6 +77,25 @@ final class SettingsManager {
             UserDefaults.standard.set(language.rawValue, forKey: "notchy.language")
             L.lang = language
         }
+    }
+
+    var hiddenCalendarIds: Set<String> {
+        didSet {
+            UserDefaults.standard.set(Array(hiddenCalendarIds), forKey: "notchy.hiddenCalendars")
+        }
+    }
+
+    var showBattery: Bool {
+        didSet { UserDefaults.standard.set(showBattery, forKey: "notchy.showBattery") }
+    }
+    var showCPU: Bool {
+        didSet { UserDefaults.standard.set(showCPU, forKey: "notchy.showCPU") }
+    }
+    var showRAM: Bool {
+        didSet { UserDefaults.standard.set(showRAM, forKey: "notchy.showRAM") }
+    }
+    var showBluetooth: Bool {
+        didSet { UserDefaults.standard.set(showBluetooth, forKey: "notchy.showBluetooth") }
     }
 
     var launchAtLogin: Bool {
@@ -50,6 +108,10 @@ final class SettingsManager {
     init() {
         let raw = UserDefaults.standard.string(forKey: "notchy.theme") ?? NotchTheme.solid.rawValue
         theme = NotchTheme(rawValue: raw) ?? .solid
+        let acRaw = UserDefaults.standard.string(forKey: "notchy.accent") ?? AccentColor.white.rawValue
+        accentColor = AccentColor(rawValue: acRaw) ?? .white
+        let compRaw = UserDefaults.standard.string(forKey: "notchy.compact") ?? CompactStyle.off.rawValue
+        compactMode = CompactStyle(rawValue: compRaw) ?? .off
         let mpRaw = UserDefaults.standard.string(forKey: "notchy.musicPlayer") ?? MusicPlayerSource.auto.rawValue
         musicPlayer = MusicPlayerSource(rawValue: mpRaw) ?? .auto
         let langRaw = UserDefaults.standard.string(forKey: "notchy.language") ?? AppLanguage.fr.rawValue
@@ -59,6 +121,12 @@ final class SettingsManager {
         queueSize = UserDefaults.standard.object(forKey: "notchy.queueSize") as? Int ?? 5
         terminalHistorySize = UserDefaults.standard.object(forKey: "notchy.terminalHistorySize") as? Int ?? 100
         musicHistorySize = UserDefaults.standard.object(forKey: "notchy.musicHistorySize") as? Int ?? 5
+        showBattery = UserDefaults.standard.bool(forKey: "notchy.showBattery")
+        showCPU = UserDefaults.standard.bool(forKey: "notchy.showCPU")
+        showRAM = UserDefaults.standard.bool(forKey: "notchy.showRAM")
+        showBluetooth = UserDefaults.standard.bool(forKey: "notchy.showBluetooth")
+        let hiddenCals = UserDefaults.standard.stringArray(forKey: "notchy.hiddenCalendars") ?? []
+        hiddenCalendarIds = Set(hiddenCals)
         launchAtLogin = UserDefaults.standard.bool(forKey: "notchy.launchAtLogin")
     }
 

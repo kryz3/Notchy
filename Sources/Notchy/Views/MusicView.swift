@@ -23,6 +23,11 @@ struct MusicView: View {
     @State private var showVolume = false
     @State private var showHistory = false
 
+    private var accent: Color {
+        let c = (music.settings?.accentColor ?? .white).color
+        return Color(red: c.r, green: c.g, blue: c.b)
+    }
+
     var body: some View {
         VStack(spacing: 8) {
             switch subView {
@@ -287,7 +292,7 @@ struct MusicView: View {
             GeometryReader { geo in
                 ZStack(alignment: .leading) {
                     Capsule().fill(.white.opacity(0.15)).frame(height: 3)
-                    Capsule().fill(.white.opacity(0.8))
+                    Capsule().fill(accent.opacity(0.85))
                         .frame(width: max(0, geo.size.width * music.progress), height: 3)
                 }
                 .frame(height: 3).frame(maxHeight: .infinity, alignment: .center)
@@ -359,7 +364,7 @@ struct MusicView: View {
                         GeometryReader { geo in
                             ZStack(alignment: .leading) {
                                 Capsule().fill(.white.opacity(0.15)).frame(height: 3)
-                                Capsule().fill(.white.opacity(0.7))
+                                Capsule().fill(accent.opacity(0.7))
                                     .frame(width: max(0, geo.size.width * music.volume), height: 3)
                             }.frame(height: 3).frame(maxHeight: .infinity, alignment: .center)
                             .contentShape(Rectangle())

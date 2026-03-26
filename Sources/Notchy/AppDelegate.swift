@@ -18,13 +18,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         setupMouseTracking()
         setupKeyboardShortcut()
         viewModel.onExpandChanged = { [weak self] expanded in
-            guard let self else { return }
-            self.panel.ignoresMouseEvents = !expanded
-            if expanded {
-                self.panel.makeKey()
-            } else {
-                self.panel.resignKey()
-            }
+            self?.onExpandChanged(expanded)
         }
     }
 
@@ -32,21 +26,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupPanel() {
         let info = viewModel.notchInfo
-        let expandedW = viewModel.expandedWidth
-        let expandedH = viewModel.expandedHeight
-
+        let ew = viewModel.expandedWidth
+        let eh = viewModel.expandedHeight
         let centerX = info.notchRect.midX
         let topY = info.screenFrame.maxY
 
-        let panelFrame = NSRect(
-            x: centerX - expandedW / 2,
-            y: topY - expandedH,
-            width: expandedW,
-            height: expandedH
-        )
+        let panelFrame = NSRect(x: centerX - ew / 2, y: topY - eh, width: ew, height: eh)
 
         panel = NotchPanel(contentRect: panelFrame)
-        // Start click-through since we're collapsed
         panel.ignoresMouseEvents = true
 
         let rootView = NotchContainerView(vm: viewModel)
@@ -56,15 +43,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         panel.orderFrontRegardless()
     }
 
+    // MARK: - Expand/Collapse
+
+    private func onExpandChanged(_ expanded: Bool) {
+        if expanded {
+            panel.ignoresMouseEvents = false
+            panel.makeKey()
+        } else {
+            panel.ignoresMouseEvents = true
+            panel.resignKey()
+        }
+    }
+
     // MARK: - Mouse tracking
 
     private func setupMouseTracking() {
-        // Global: mouse everywhere (including when panel is click-through)
         globalMouseMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.mouseMoved, .leftMouseDown]) { [weak self] event in
             self?.handleGlobalMouse(event)
         }
-
-        // Local: mouse inside our panel (only fires when panel accepts events = expanded)
         localMouseMonitor = NSEvent.addLocalMonitorForEvents(matching: [.mouseMoved, .mouseExited]) { [weak self] event in
             self?.handleLocalMouse(event)
             return event
@@ -75,14 +71,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let loc = NSEvent.mouseLocation
 
         if viewModel.isExpanded {
-            // Mouse moved outside our panel → collapse
-            let contentRect = panel.frame
-            if !contentRect.contains(loc) {
+            if !panel.frame.contains(loc) {
                 cancelHoverTimer()
                 viewModel.scheduleCollapse(delay: 0.15)
             }
         } else {
-            // Collapsed: check if mouse is exactly in the notch trigger zone
             let trigger = notchTriggerRect()
             if trigger.contains(loc) {
                 if event.type == .leftMouseDown {
@@ -91,6 +84,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 } else {
                     startHoverTimer()
                 }
+            } else if event.type == .leftMouseDown && viewModel.isCompactVisible {
+                // Check click on compact play/pause area (right side of compact bar)
+                let compactRect = compactClickRect()
+                if compactRect.contains(loc) {
+                    viewModel.music.togglePlayPause()
+                }
             } else {
                 cancelHoverTimer()
             }
@@ -98,16 +97,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func handleLocalMouse(_ event: NSEvent) {
-        // Panel is interactive (expanded) and mouse is inside → cancel collapse
         if viewModel.isExpanded {
             viewModel.cancelPendingCollapse()
         }
     }
 
-    /// Small rect around the physical notch — this is the ONLY hover trigger
     private func notchTriggerRect() -> NSRect {
         let info = viewModel.notchInfo
-        // Tight zone: notch rect + small vertical padding below
         return NSRect(
             x: info.notchRect.minX,
             y: info.notchRect.minY - 10,
@@ -116,10 +112,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         )
     }
 
+    /// Click zone for the compact play/pause button (right side of compact bar)
+    private func compactClickRect() -> NSRect {
+        let info = viewModel.notchInfo
+        let centerX = info.notchRect.midX
+        let cw = viewModel.compactWidth
+        // Right 40px of the compact bar
+        return NSRect(
+            x: centerX + cw / 2 - 40,
+            y: info.notchRect.minY,
+            width: 40,
+            height: info.notchHeight
+        )
+    }
+
     private func startHoverTimer() {
         guard hoverTimer == nil else { return }
+        viewModel.isHovering = true
         hoverTimer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: false) { [weak self] _ in
             self?.viewModel.expand()
+            self?.viewModel.isHovering = false
             self?.hoverTimer = nil
         }
     }
@@ -127,13 +139,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func cancelHoverTimer() {
         hoverTimer?.invalidate()
         hoverTimer = nil
+        viewModel.isHovering = false
     }
 
     // MARK: - Keyboard
 
     private func setupKeyboardShortcut() {
         localKeyMonitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self] event in
-            if event.keyCode == 53 { // Escape
+            if event.keyCode == 53 {
                 self?.viewModel.collapse()
                 return nil
             }
