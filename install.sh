@@ -24,6 +24,10 @@ if [ -d "${INSTALL_DIR}/${APP_NAME}.app" ]; then
 fi
 cp -R "${APP_NAME}.app" "${INSTALL_DIR}/"
 
+# Remove quarantine flag (prevents "malware" warning)
+echo "Removing quarantine flag..."
+xattr -cr "${INSTALL_DIR}/${APP_NAME}.app"
+
 echo "Setting up launch at login..."
 # Create LaunchAgent
 PLIST_DIR="$HOME/Library/LaunchAgents"

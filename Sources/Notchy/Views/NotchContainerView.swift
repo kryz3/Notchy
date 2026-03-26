@@ -597,6 +597,7 @@ struct NotchContainerView: View {
                     vm.settings.musicPlayer = MusicPlayerSource(rawValue: val) ?? .auto
                 }
             }
+
             settingsSlider(L.queueSize, value: $vm.settings.queueSize, unit: L.tracks, range: 3...20, step: 1)
             settingsSlider(L.musicHistory, value: $vm.settings.musicHistorySize, unit: L.tracks, range: 3...30, step: 1)
         }

@@ -72,6 +72,7 @@ final class SettingsManager {
         didSet { UserDefaults.standard.set(musicPlayer.rawValue, forKey: "notchy.musicPlayer") }
     }
 
+
     var language: AppLanguage {
         didSet {
             UserDefaults.standard.set(language.rawValue, forKey: "notchy.language")

@@ -6,23 +6,31 @@ Transform your MacBook's notch into a Dynamic Island. Hover to reveal a producti
 
 ## Features
 
-**Music** — Control Apple Music directly from the notch. Play/pause, skip, seek, shuffle, volume, favorite. Album artwork with dynamic glow. View album tracklist.
+**Music** — Control Apple Music or Spotify from the notch. Play/pause, skip, seek, shuffle, volume, favorite. Album artwork with dynamic glow.
 
-**Calendar** — See today's events, navigate between days, create and delete events with calendar picker. Tap an event to open Calendar.app.
+**Calendar** — Today's events, navigate between days, create/delete events. Tap to open Calendar.app.
 
-**Reminders** — View and check off reminders, create and delete with animations.
+**Reminders** — View, create, check off and delete reminders.
 
-**Notes** — Persistent sticky note with markdown preview, plus a freehand drawing canvas with colors and stroke sizes.
+**Notes** — Persistent sticky note with markdown preview + freehand drawing canvas.
 
-**Terminal** — Built-in zsh with tab autocompletion and persistent command history.
+**Clipboard** — Persistent clipboard history with quick copy.
 
-**System** — Clock display, audio device notifications (AirPods), glassmorphism theme, FR/EN language, auto-updates, launch at login.
+**Terminal** — Built-in zsh with tab autocompletion and persistent history.
+
+**System** — Weather, timer, battery/CPU/RAM/Bluetooth indicators, glassmorphism theme, accent colors, compact mode, FR/EN, auto-updates, launch at login.
 
 ## Install
 
 1. Download `Notchy.dmg` from [Releases](https://github.com/kryz3/Notchy/releases)
 2. Open the DMG and drag **Notchy.app** into **Applications**
-3. **First launch** : right-click Notchy.app → **Open** (required once because the app is not signed with an Apple Developer certificate)
+3. Open Terminal and run:
+   ```bash
+   xattr -cr /Applications/Notchy.app
+   ```
+4. Launch Notchy from Applications
+
+> The `xattr` command removes the macOS quarantine flag. This is required because the app is not signed with an Apple Developer certificate ($99/year).
 
 Updates are automatic — check from Settings inside the app.
 
@@ -31,8 +39,7 @@ Updates are automatic — check from Settings inside the app.
 ```bash
 git clone https://github.com/kryz3/Notchy.git
 cd Notchy
-bash build.sh
-open Notchy.app
+bash install.sh
 ```
 
 Requires macOS 14+, Swift toolchain, and a MacBook with notch.

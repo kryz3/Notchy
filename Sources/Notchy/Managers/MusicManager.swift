@@ -253,6 +253,7 @@ final class MusicManager {
 
     func fetchAlbumTracks() {
         albumName = album
+
         guard activePlayer == .appleMusic, !album.isEmpty else { albumTracks = []; return }
         let source = """
         tell application "Music"
