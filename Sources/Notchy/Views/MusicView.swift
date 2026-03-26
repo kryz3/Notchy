@@ -74,20 +74,36 @@ struct MusicView: View {
             }
 
             if music.albumTracks.isEmpty {
-                // Album not in library (streaming) — show fallback
+                // No tracklist available (Spotify or streaming Apple Music)
                 Spacer()
-                VStack(spacing: 8) {
+                VStack(spacing: 10) {
                     if let img = music.artwork {
                         Image(nsImage: img).resizable().aspectRatio(contentMode: .fill)
-                            .frame(width: 80, height: 80).clipShape(RoundedRectangle(cornerRadius: 10))
+                            .frame(width: 90, height: 90).clipShape(RoundedRectangle(cornerRadius: 10))
+                            .shadow(color: .black.opacity(0.3), radius: 6, y: 3)
                     }
-                    Text(music.artist).font(.system(size: 11)).foregroundStyle(.white.opacity(0.4))
-                    Text(L.albumNotInLibrary)
-                        .font(.system(size: 10)).foregroundStyle(.white.opacity(0.25))
-                        .multilineTextAlignment(.center)
-                    TapIcon("arrow.up.right.circle", size: 16, color: .white.opacity(0.4)) {
-                        music.openInMusic()
+                    Text(music.artist).font(.system(size: 11, weight: .medium)).foregroundStyle(.white.opacity(0.5))
+                    if music.trackNumber > 0 {
+                        Text(L.lang == .fr ? "Piste \(music.trackNumber)" : "Track \(music.trackNumber)")
+                            .font(.system(size: 10)).foregroundStyle(.white.opacity(0.25))
                     }
+
+                    // Open in player
+                    Button {
+                        music.openInPlayer()
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.up.right").font(.system(size: 10))
+                            Text(music.activePlayer == .spotify
+                                ? (L.lang == .fr ? "Voir dans Spotify" : "View in Spotify")
+                                : (L.lang == .fr ? "Voir dans Music" : "View in Music"))
+                                .font(.system(size: 10, weight: .medium))
+                        }
+                        .foregroundStyle(.white.opacity(0.5))
+                        .padding(.horizontal, 12).padding(.vertical, 5)
+                        .background(RoundedRectangle(cornerRadius: 8).fill(.white.opacity(0.08)))
+                    }
+                    .buttonStyle(.plain)
                 }
                 Spacer()
             } else {
@@ -309,9 +325,19 @@ struct MusicView: View {
                 showHistory = !music.hasQueue
                 if music.hasQueue { music.fetchQueue() }
             }
-            TapIcon("arrow.up.right", size: 11, color: .white.opacity(0.35)) { music.openInMusic() }
-            TapIcon(music.isFavorited ? "heart.fill" : "heart", size: 11,
-                    color: music.isFavorited ? .pink : .white.opacity(0.35)) { music.toggleFavorite() }
+            // Repeat (Spotify only)
+            if music.canRepeat {
+                TapIcon("repeat", size: 11,
+                        color: music.isRepeating ? .green : .white.opacity(0.35)) { music.toggleRepeat() }
+            }
+
+            TapIcon("arrow.up.right", size: 11, color: .white.opacity(0.35)) { music.openInPlayer() }
+
+            // Favorite (Apple Music only)
+            if music.canFavorite {
+                TapIcon(music.isFavorited ? "heart.fill" : "heart", size: 11,
+                        color: music.isFavorited ? .pink : .white.opacity(0.35)) { music.toggleFavorite() }
+            }
         }
     }
 
@@ -353,13 +379,27 @@ struct MusicView: View {
     }
 
     private func shufflePlay() {
-        NSAppleScript(source: """
+        let source: String
+        let useSpotify = music.activePlayer == .spotify || music.settings?.musicPlayer == .spotify
+        if useSpotify {
+            source = """
+            tell application "Spotify"
+                activate
+                delay 1
+                play
+                set shuffling to true
+            end tell
+            """
+        } else {
+            source = """
             tell application "Music"
                 activate
                 set shuffle enabled to true
                 play (every track of library playlist 1)
             end tell
-        """)?.executeAndReturnError(nil)
+            """
+        }
+        NSAppleScript(source: source)?.executeAndReturnError(nil)
     }
 
     private func fmt(_ s: Double) -> String { String(format: "%d:%02d", Int(s) / 60, Int(s) % 60) }

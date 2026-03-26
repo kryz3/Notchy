@@ -172,6 +172,30 @@ struct NotchContainerView: View {
                 }
             }
 
+            // Music player
+            settingsSection(L.musicPlayer) {
+                HStack(spacing: 8) {
+                    ForEach(MusicPlayerSource.allCases, id: \.rawValue) { source in
+                        Button {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 0.85)) {
+                                vm.settings.musicPlayer = source
+                            }
+                        } label: {
+                            Text(source.rawValue)
+                                .font(.system(size: 11, weight: vm.settings.musicPlayer == source ? .semibold : .regular))
+                                .foregroundStyle(vm.settings.musicPlayer == source ? .white : .white.opacity(0.4))
+                                .padding(.horizontal, 10).padding(.vertical, 5)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 6)
+                                        .fill(vm.settings.musicPlayer == source ? .white.opacity(0.12) : .white.opacity(0.04))
+                                )
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
             // Queue size
             settingsSlider(L.queueSize, value: $vm.settings.queueSize, unit: L.tracks, range: 3...20, step: 1)
 

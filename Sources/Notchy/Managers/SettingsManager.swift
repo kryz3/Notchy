@@ -5,6 +5,12 @@ enum NotchTheme: String, CaseIterable {
     case glass = "Glass"
 }
 
+enum MusicPlayerSource: String, CaseIterable {
+    case appleMusic = "Apple Music"
+    case spotify = "Spotify"
+    case auto = "Auto"
+}
+
 @Observable
 final class SettingsManager {
     var theme: NotchTheme {
@@ -21,6 +27,10 @@ final class SettingsManager {
 
     var musicHistorySize: Int {
         didSet { UserDefaults.standard.set(musicHistorySize, forKey: "notchy.musicHistorySize") }
+    }
+
+    var musicPlayer: MusicPlayerSource {
+        didSet { UserDefaults.standard.set(musicPlayer.rawValue, forKey: "notchy.musicPlayer") }
     }
 
     var language: AppLanguage {
@@ -40,6 +50,8 @@ final class SettingsManager {
     init() {
         let raw = UserDefaults.standard.string(forKey: "notchy.theme") ?? NotchTheme.solid.rawValue
         theme = NotchTheme(rawValue: raw) ?? .solid
+        let mpRaw = UserDefaults.standard.string(forKey: "notchy.musicPlayer") ?? MusicPlayerSource.auto.rawValue
+        musicPlayer = MusicPlayerSource(rawValue: mpRaw) ?? .auto
         let langRaw = UserDefaults.standard.string(forKey: "notchy.language") ?? AppLanguage.fr.rawValue
         let resolvedLang = AppLanguage(rawValue: langRaw) ?? .fr
         language = resolvedLang

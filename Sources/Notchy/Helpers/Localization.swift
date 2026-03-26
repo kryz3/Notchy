@@ -61,6 +61,9 @@ enum L {
     static var quit: String { lang == .fr ? "Quitter Notchy" : "Quit Notchy" }
     static var createdBy: String { lang == .fr ? "Créé par" : "Created by" }
 
+    // MARK: - Settings extra
+    static var musicPlayer: String { lang == .fr ? "Lecteur musique" : "Music player" }
+
     // MARK: - Date locale
     static var dateLocale: Locale { Locale(identifier: lang == .fr ? "fr_FR" : "en_US") }
 }
