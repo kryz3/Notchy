@@ -127,6 +127,10 @@ final class CalendarManager {
 
     func refresh() {
         store = EKEventStore()
+        // Reset to today if the selected date is in the past (e.g. app ran overnight)
+        if selectedDate < Calendar.current.startOfDay(for: Date()) {
+            selectedDate = Date()
+        }
         fetchEvents()
     }
 }
